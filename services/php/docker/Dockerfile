@@ -1,13 +1,11 @@
-FROM php:7.1.13-fpm
+# Use PHP 7.4 FPM image based on Debian 12 Bookworm
+FROM php:7.4-fpm
 
-# Install modules
+# Install dependencies and required libraries
 RUN apt-get update && apt-get install -y \
         libfreetype6-dev \
-        librabbitmq-dev \
-        libssh-dev \
         libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng12-dev \
+        libpng-dev \
         libicu-dev \
         libxml2-dev \
         libssl-dev \
@@ -15,30 +13,39 @@ RUN apt-get update && apt-get install -y \
         wget \
         ssh \
         libpcre3-dev \
-        --no-install-recommends       
-       
-RUN docker-php-ext-install mcrypt zip bcmath intl mbstring mysqli pdo_mysql exif xmlrpc \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+        pkg-config \
+        libonig-dev \
+        libzip-dev \
+        librabbitmq-dev \
+        --no-install-recommends
+
+# Install PHP extensions
+RUN docker-php-ext-install bcmath intl mbstring mysqli pdo_mysql exif zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd
 
-RUN pecl install -o -f oauth mongodb amqp-1.8.0 \
-    && rm -rf /tmp/pear
+# Install additional PHP extensions via PECL
+RUN pecl install amqp \
+    && pecl install oauth \
+    && docker-php-ext-enable amqp oauth
 
-RUN docker-php-ext-enable mongodb oauth amqp
-
-RUN apt-get purge -y g++ \
-    && apt-get autoremove -y \
-    && rm -r /var/lib/apt/lists/* \
+# Clean up unnecessary packages and files to reduce image size
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
-
+    # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php \
     && mv composer.phar /usr/local/bin/composer \
     && chmod +x /usr/local/bin/composer
 
-RUN composer global require "fxp/composer-asset-plugin:^1.4.4"
+# Install the Composer Asset Plugin globally
+#RUN composer global require "fxp/composer-asset-plugin:^1.4.6"
 
-
+# Update www-data user to match your host UID (if needed)
 RUN usermod -u 1000 www-data
 
+# Expose port 9000 for PHP-FPM
 EXPOSE 9000
+
+# Command to start PHP-FPM
 CMD ["php-fpm"]
