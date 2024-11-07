@@ -22,7 +22,7 @@ services:
       - ./fecshop-2.x-example-data:/var/example_db_2.x      
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=fecshopxfd3ffaads123456
+      - MYSQL_ROOT_PASSWORD=P2h9u1o1n8g2
       - MYSQL_DATABASE=fecshop
     networks:
       - code-network 
